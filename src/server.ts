@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { response } from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
@@ -17,7 +17,6 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   // GET /filteredimage?image_url={{URL}}
   // endpoint to filter an image from a public url.
   // IT SHOULD
-  //    1
   //    1. validate the image_url query
   //    2. call filterImageFromURL(image_url) to filter the image
   //    3. send the resulting file in the response
@@ -27,10 +26,34 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   // RETURNS
   //   the filtered image file [!!TIP res.sendFile(filteredpath); might be useful]
 
-  /**************************************************************************** */
-
+app.get("/filteredimage", async(req, res)=>{
+  const image_url = req.query.image_url;
+  if (!image_url){
+    res.status(400).send({
+      status: "Bad Request",
+      message: "Check the syntax of the request"
+    });
+  }else{
+    try{
+      await filterImageFromURL(image_url).then(response =>{
+        res.sendFile(response);
+        res.on("finish", function(){
+        deleteLocalFiles([response]);
+      });
+    });
+    }catch(error){
+      res.status(500);
+      res.send({
+            status: "Internal Server Error",
+            message: "The server cannot handle this request",
+            verbose: error
+      });
+    };
+  };
+});
   //! END @TODO1
-  
+
+    /**************************************************************************** */
   // Root Endpoint
   // Displays a simple message to the user
   app.get( "/", async ( req, res ) => {
